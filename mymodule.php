@@ -29,17 +29,27 @@ class MyModule extends Module
 
   public function install()
   {
+    ////////////////////////////////////////////////////////////////////////////
+    // if (Shop::isFeatureActive())
+    //   Shop::setContext(Shop::CONTEXT_ALL);
+    // if (!parent::install() ||
+    // !$this->registerHook('leftColumn') ||
+    // !$this->registerHook('header') ||
+    // !Configuration::updateValue('MYMODULE_NAME', 'my friend')
+    // )
+    // return false;
+    //
+    // return true;
+
     if (Shop::isFeatureActive())
       Shop::setContext(Shop::CONTEXT_ALL);
 
-    if (!parent::install() ||
-      !$this->registerHook('leftColumn') ||
-      !$this->registerHook('header') ||
-      !Configuration::updateValue('MYMODULE_NAME', 'my friend')
-    )
-      return false;
+    return parent::install() &&
+      $this->registerHook('leftColumn') &&
+      $this->registerHook('header') &&
+      Configuration::updateValue('MYMODULE_NAME', 'my friend');
+    ////////////////////////////////////////////////////////////////////////////
 
-    return true;
   }
 
   public function uninstall()
@@ -76,7 +86,7 @@ class MyModule extends Module
   {
       // Get default language
       $default_lang = (int)Configuration::get('PS_LANG_DEFAULT');
-   
+
       // Init Fields form array
       $fields_form[0]['form'] = array(
           'legend' => array(
@@ -96,19 +106,19 @@ class MyModule extends Module
               'class' => 'btn btn-default pull-right'
           )
       );
-   
+
       $helper = new HelperForm();
-   
+
       // Module, token and currentIndex
       $helper->module = $this;
       $helper->name_controller = $this->name;
       $helper->token = Tools::getAdminTokenLite('AdminModules');
       $helper->currentIndex = AdminController::$currentIndex.'&configure='.$this->name;
-   
+
       // Language
       $helper->default_form_language = $default_lang;
       $helper->allow_employee_form_lang = $default_lang;
-   
+
       // Title and toolbar
       $helper->title = $this->displayName;
       $helper->show_toolbar = true;        // false -> remove toolbar
@@ -126,10 +136,31 @@ class MyModule extends Module
               'desc' => $this->l('Back to list')
           )
       );
-   
+
       // Load current value
       $helper->fields_value['MYMODULE_NAME'] = Configuration::get('MYMODULE_NAME');
-   
+
       return $helper->generateForm($fields_form);
+  }
+
+  public function hookDisplayLeftColumn($params)
+  {
+    $this->context->smarty->assign(
+        array(
+            'my_module_name' => Configuration::get('MYMODULE_NAME'),
+            'my_module_link' => $this->context->link->getModuleLink('mymodule', 'display')
+        )
+    );
+    return $this->display(__FILE__, 'mymodule.tpl');
+  }
+
+  public function hookDisplayRightColumn($params)
+  {
+    return $this->hookDisplayLeftColumn($params);
+  }
+
+  public function hookDisplayHeader()
+  {
+    $this->context->controller->addCSS($this->_path.'css/mymodule.css', 'all');
   }
 }
